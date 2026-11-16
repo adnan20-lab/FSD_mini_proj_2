@@ -1,0 +1,19 @@
+#!/usr/bin/env sh
+# Lightweight Maven bootstrapper. Uses an existing mvn when available; otherwise downloads Maven on first run.
+set -eu
+MAVEN_VERSION="3.9.11"
+if command -v mvn >/dev/null 2>&1; then exec mvn "$@"; fi
+BASE_DIR="${HOME:-$HOME}/.m2/wrapper/dists/apache-maven-${MAVEN_VERSION}"
+MAVEN_HOME="$BASE_DIR/apache-maven-${MAVEN_VERSION}"
+if [ ! -x "$MAVEN_HOME/bin/mvn" ]; then
+  mkdir -p "$BASE_DIR"
+  ARCHIVE="$BASE_DIR/apache-maven-${MAVEN_VERSION}-bin.zip"
+  URL="https://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.zip"
+  echo "Maven is not installed. Downloading Apache Maven ${MAVEN_VERSION} from ${URL} ..."
+  if command -v curl >/dev/null 2>&1; then curl -fL "$URL" -o "$ARCHIVE";
+  elif command -v wget >/dev/null 2>&1; then wget -O "$ARCHIVE" "$URL";
+  else echo "Install Maven ${MAVEN_VERSION}+ or curl/wget and rerun." >&2; exit 1; fi
+  if command -v unzip >/dev/null 2>&1; then unzip -q -o "$ARCHIVE" -d "$BASE_DIR";
+  else echo "The unzip command is required for first-time Maven bootstrap." >&2; exit 1; fi
+fi
+exec "$MAVEN_HOME/bin/mvn" "$@"
